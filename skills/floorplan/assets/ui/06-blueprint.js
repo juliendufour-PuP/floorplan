@@ -26,21 +26,21 @@
   const addPill = () => {
     const k = document.querySelector('#context .k');
     if (!k || k.querySelector('.bp-pill')) return;
-    k.insertAdjacentHTML('beforeend', '<span class="bp-pill" title="Planned, not built yet: every card is a part the system would need.">Blueprint</span>');
+    k.insertAdjacentHTML('beforeend', '<span class="bp-pill" title="Prévu, pas encore construit : chaque carte est une partie dont le système aurait besoin.">Plan</span>');
   };
   SC.on('render', addPill);
   SC.on('ready', addPill);
 
-  const ACCESS = { public: 'anyone', 'signed-in': 'signed-in users', team: 'only the team that runs the service', webhook: 'the service that sends it, which must prove it', internal: 'only our own services' };
+  const ACCESS = { public: 'tout le monde', 'signed-in': 'les utilisateurs connectés', team: 'seulement l’équipe qui gère le service', webhook: 'le service qui l’envoie, qui doit prouver son identité', internal: 'seulement nos propres services' };
   /** "for signed-in users: managers of that location", or the open question when nobody decided. */
-  const whoMay = (r) => !r.access ? 'who may use it isn’t decided yet: ask me'
-    : `for ${r.access === 'signed-in' && r.who ? r.who : ACCESS[r.access] || r.access}${r.publicBecause ? `, because ${r.publicBecause.replace(/\.$/, '')}` : ''}`;
+  const whoMay = (r) => !r.access ? 'qui peut l’utiliser n’est pas encore décidé : demandez-moi'
+    : `pour ${r.access === 'signed-in' && r.who ? r.who : ACCESS[r.access] || r.access}${r.publicBecause ? `, parce que ${r.publicBecause.replace(/\.$/, '')}` : ''}`;
 
   SC.addPanelSection('overview', () => ({
-    html: `<div class="sec"><h3>Blueprint</h3>
-      <p class="pd">Planned${BP.source ? ` from <b>${h(BP.source)}</b>` : ''}, not built yet. Every dashed card is a part the system would need.${SC.exported ? '' : ` Pick one and choose <b>Build this with ${h(A.name)}</b> to start on it.`}</p>
+    html: `<div class="sec"><h3>Plan prévisionnel</h3>
+      <p class="pd">Prévu${BP.source ? ` à partir de <b>${h(BP.source)}</b>` : ''}, pas encore construit. Chaque carte en pointillés est une partie dont le système aurait besoin.${SC.exported ? '' : ` Choisissez-en une, puis <b>Construire avec ${h(A.name)}</b> pour la lancer.`}</p>
       ${BP.stack?.length ? `<div class="tags" style="margin-top:10px">${BP.stack.map((s) => `<span class="tag">${h(s)}</span>`).join('')}</div>` : ''}
-      ${BP.assumptions?.length ? `<h3 style="margin-top:14px">Assumptions</h3><ul class="bp-list">${BP.assumptions.map((a) => `<li>${h(a)}</li>`).join('')}</ul>` : ''}
+      ${BP.assumptions?.length ? `<h3 style="margin-top:14px">Hypothèses</h3><ul class="bp-list">${BP.assumptions.map((a) => `<li>${h(a)}</li>`).join('')}</ul>` : ''}
     </div>`,
   }));
 
@@ -61,16 +61,16 @@
     const inside = (x) => x === id || paths.has(x) || (x.startsWith('r:') && paths.has('f:' + SC.routes[+x.slice(2)]?.f)) || (SC.exists(x) && SC.chain(x).includes(id));
     const questions = (G.health?.issues || []).filter((q) => q.kind === 'question' && (q.items || []).some(inside)).map((q) => q.title);
     return [
-      `Build "${i.name}" from the ${G.project.name} blueprint: floorplan/plan.json and floorplan/architecture.json${BP.source ? `, planned from ${BP.source}` : ''}.`,
-      i.desc ? `\nWhat it's for: ${i.desc}` : '',
-      BP.stack?.length ? `\nStack: ${BP.stack.join('; ')}.` : '',
-      `\nFiles to create:`,
+      `Construisez « ${i.name} » à partir du plan prévisionnel de ${G.project.name} : floorplan/plan.json et floorplan/architecture.json${BP.source ? `, prévu à partir de ${BP.source}` : ''}.`,
+      i.desc ? `\nÀ quoi ça sert : ${i.desc}` : '',
+      BP.stack?.length ? `\nTechnologies : ${BP.stack.join(' ; ')}.` : '',
+      `\nFichiers à créer :`,
       ...fl.map((f) => `- ${f.p}: ${f.name}${f.d ? `. ${f.d}` : ''}`),
-      eps.length ? `\nEndpoints to create (keep the method, path and who may use them exactly as planned):` : '',
+      eps.length ? `\nPoints d’accès à créer (gardez la méthode, le chemin et qui peut les utiliser exactement comme prévu) :` : '',
       ...eps.map((r) => `- ${r.m} ${r.p} (${whoMay(r)}): ${r.name}${r.d ? `. ${r.d}` : ''}`),
-      deps.size ? `\nIt relies on: ${[...deps.values()].join('; ')}.` : '',
-      questions.length ? `\nStill undecided (ask me before building what depends on it):\n${questions.map((q) => `- ${q}`).join('\n')}` : '',
-      `\nBefore writing code, read these parts of plan.json, and check which of the things it relies on exist yet; if some don't, tell me and suggest what to build first. Keep the plan's file paths and names. If the plan looks wrong or incomplete for this part, tell me before changing it. When it's done, run it or its tests and tell me how to try it.`,
+      deps.size ? `\nCela dépend de : ${[...deps.values()].join(' ; ')}.` : '',
+      questions.length ? `\nPas encore décidé (demandez-moi avant de construire ce qui en dépend) :\n${questions.map((q) => `- ${q}`).join('\n')}` : '',
+      `\nAvant d’écrire du code, lisez ces parties de plan.json et vérifiez lesquelles de ses dépendances existent déjà. S’il en manque, dites-le-moi et proposez ce qu’il faut construire d’abord. Gardez les chemins et les noms de fichiers du plan. Si le plan vous semble faux ou incomplet pour cette partie, dites-le-moi avant de le modifier. Une fois terminé, lancez-le ou lancez ses tests, et expliquez-moi comment l’essayer. Répondez-moi en français.`,
     ].filter((x) => x !== '').join('\n');
   }
 
@@ -80,21 +80,21 @@
     if (id.startsWith('r:')) {
       const r = SC.routes[+id.slice(2)];
       if (!r) return '';
-      const text = !r.access ? `Not decided yet.${SC.graph.health ? ' The design review lists it.' : ''}` : `${Cap(r.access === 'signed-in' && r.who ? r.who : ACCESS[r.access] || r.access)}.${r.publicBecause ? ` Open on purpose: ${r.publicBecause}` : ''}`;
-      return `<div class="sec"><h3>Who may use it</h3><p class="pd">${h(text)}</p></div>`;
+      const text = !r.access ? `Pas encore décidé.${SC.graph.health ? ' La revue de conception le signale.' : ''}` : `${Cap(r.access === 'signed-in' && r.who ? r.who : ACCESS[r.access] || r.access)}.${r.publicBecause ? ` Ouvert volontairement : ${r.publicBecause}` : ''}`;
+      return `<div class="sec"><h3>Qui peut l’utiliser</h3><p class="pd">${h(text)}</p></div>`;
     }
     const i = SC.info(id);
     if (SC.exported || !i || (i.type === 'node' && i.n.kind === 'external') || !filesIn(id).length) return '';
     return {
-      html: `<div class="sec"><h3>Build it</h3><p class="pd">A ready request for ${h(A.app)} to build ${i.type === 'file' ? 'this file' : 'this part'} the way the plan describes.</p>
-        <div class="actions"><button class="btn soft" data-bp-build>${SC.iconI('spark')}Build this with ${h(A.name)}</button></div></div>`,
+      html: `<div class="sec"><h3>Construire</h3><p class="pd">Une demande prête pour ${h(A.app)}, afin de construire ${i.type === 'file' ? 'ce fichier' : 'cette partie'} comme le décrit le plan.</p>
+        <div class="actions"><button class="btn soft" data-bp-build>${SC.iconI('spark')}Construire avec ${h(A.name)}</button></div></div>`,
       bind: (el) => el.querySelector('[data-bp-build]')?.addEventListener('click', (ev) => {
         ev.stopPropagation();
         const prompt = buildPrompt(id);
         SC.modal({
-          title: `Build this with ${A.name}`,
-          html: `<p class="hc-hint">Copy this request and paste it into <b>${h(A.app)}</b>, opened in your project folder.</p><pre>${h(prompt)}</pre>`,
-          actions: [{ label: 'Copy prompt', primary: true, icon: 'copy', onClick: () => { SC.copy(prompt); SC.toast(`Copied. Paste it into ${A.app}.`); } }],
+          title: `Construire avec ${A.name}`,
+          html: `<p class="hc-hint">Copiez cette demande et collez-la dans <b>${h(A.app)}</b>, ouvert dans le dossier de votre projet.</p><pre>${h(prompt)}</pre>`,
+          actions: [{ label: 'Copier la demande', primary: true, icon: 'copy', onClick: () => { SC.copy(prompt); SC.toast(`Copié. Collez la demande dans ${A.app}.`); } }],
         });
       }),
     };

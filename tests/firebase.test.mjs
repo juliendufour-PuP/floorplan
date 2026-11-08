@@ -32,7 +32,7 @@ test('callables and onRequest functions are endpoints, under the name the entry 
     'GET /api/reports', 'POST /api/reports',
   ]);
   assert.equal(graph.routes.find((r) => r.p === '/approveItem').d, 'Approves an item once an admin has reviewed it.');
-  assert.equal(graph.routes.find((r) => r.p === '/api/reports' && r.m === 'GET').name, 'Get api reports');
+  assert.equal(graph.routes.find((r) => r.p === '/api/reports' && r.m === 'GET').name, 'Lire api reports');
 });
 
 test("the website's calls reach the functions: httpsCallable, a helper around it, and fetch", () => {

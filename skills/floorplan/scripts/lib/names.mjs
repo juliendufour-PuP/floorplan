@@ -17,7 +17,7 @@ export function humanize(id) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : String(id);
 }
 
-const cleanSeg = (seg) => seg.replace(/^\((.*)\)$/, '$1').replace(/^\[\.{0,3}(.*)\]$/, '$1 detail');
+const cleanSeg = (seg) => seg.replace(/^\((.*)\)$/, '$1').replace(/^\[\.{0,3}(.*)\]$/, '$1 (détail)');
 
 export function fallbackFileName(p) {
   const base = P.basename(p);
@@ -28,17 +28,17 @@ export function fallbackFileName(p) {
   if (GENERIC.test(core)) {
     const dirs = P.dirname(p).split('/').filter((d) => d && !/^(src|app|lib|pkg|internal)$/.test(d)).map(cleanSeg);
     const parent = dirs.slice(-1)[0] || '';
-    const role = { page: 'page', layout: 'layout', route: 'route handler', __init__: 'package', index: '', loading: 'loading state', error: 'error state' }[core.toLowerCase()];
-    name = parent ? `${humanize(parent)}${role ? ' ' + role : role === '' ? '' : ' ' + humanize(core).toLowerCase()}` : humanize(core);
+    const role = { page: 'Page', layout: 'Gabarit', route: 'Gestionnaire de route', __init__: 'Paquet', index: '', loading: 'État de chargement', error: 'État d’erreur' }[core.toLowerCase()];
+    name = parent ? (role ? `${role} ${humanize(parent)}` : role === '' ? humanize(parent) : `${humanize(parent)} ${humanize(core).toLowerCase()}`) : humanize(core);
   } else name = humanize(core);
-  return isTest ? `${name} tests` : name;
+  return isTest ? `${name} (tests)` : name;
 }
 
 export function fallbackRouteName(r) {
   if (r.handler && !/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS|ANY)$/.test(r.handler)) return humanize(r.handler);
   const segs = r.path.split('/').filter((s) => s && !/[<{:[*]/.test(s));
-  const verb = { GET: 'Get', POST: 'Create', PUT: 'Replace', PATCH: 'Update', DELETE: 'Delete' }[r.method] || r.method;
-  return `${verb} ${humanize(segs.slice(-2).join(' ') || 'root').toLowerCase()}`;
+  const verb = { GET: 'Lire', POST: 'Créer', PUT: 'Remplacer', PATCH: 'Modifier', DELETE: 'Supprimer' }[r.method] || r.method;
+  return `${verb} ${humanize(segs.slice(-2).join(' ') || 'racine').toLowerCase()}`;
 }
 
 export const routeKey = (r) => `${r.method} ${r.path}`;

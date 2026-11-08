@@ -84,11 +84,11 @@ test('Health is a design review of the plan', () => {
   const issues = graph.health.issues;
   const titles = issues.map((i) => `${i.severity} ${i.title}`);
   assert.deepEqual(titles, [
-    'medium Anyone could change data through one planned endpoint',
-    'medium The plan doesn’t say who may use one endpoint',
+    'medium N’importe qui pourrait modifier des données via un point d’accès prévu',
+    'medium Le plan ne dit pas qui peut utiliser un point d’accès',
     'medium Can owners cancel a walk for free, and up to when?',
-    'low Nothing in the plan uses one endpoint',
-    'low One planned file isn’t connected to anything',
+    'low Rien dans le plan n’utilise un point d’accès',
+    'low Un fichier prévu n’est relié à rien',
   ]);
   const routesOf = (i) => i.items.filter((id) => id.startsWith('r:')).map((id) => `${graph.routes[+id.slice(2)].m} ${graph.routes[+id.slice(2)].p}`).sort();
   // sign-in is open on purpose (publicBecause says why), so only sign-up is flagged
@@ -100,11 +100,11 @@ test('Health is a design review of the plan', () => {
   assert.match(issues[0].fix, /floorplan\/plan\.json/);
   // each item also has a request to settle it from the map, for the person to finish or edit
   assert.deepEqual(issues.map((i) => i.change), [
-    'Review who may use POST /api/auth/signup: anyone can change data through it now. ',
-    'Decide who may use DELETE /api/walkers/:id, going by the PRD. ',
-    'Open question: "Can owners cancel a walk for free, and up to when?" My answer: ',
-    'Nothing calls DELETE /api/walkers/:id. Add the screen or service that should use it, or remove it if not needed. ',
-    'api/src/lib/geo.ts isn’t connected to anything. Connect it to what should use it, or remove it. ',
+    'Revoir qui peut utiliser POST /api/auth/signup. Pour l’instant, n’importe qui peut s’en servir pour modifier des données. ',
+    'Décider qui peut utiliser DELETE /api/walkers/:id, d’après le PRD. ',
+    'Question ouverte : « Can owners cancel a walk for free, and up to when? » Ma réponse : ',
+    'Rien n’appelle DELETE /api/walkers/:id. Ajoutez l’écran ou le service qui devrait l’utiliser, ou supprimez-le s’il ne sert à rien. ',
+    'api/src/lib/geo.ts n’est relié à rien. Reliez-le à ce qui devrait l’utiliser, ou supprimez-le. ',
   ]);
   assert.match(buildOut, /DESIGN REVIEW {2}0 important · 3 worth fixing · 2 minor/);
 });

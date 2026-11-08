@@ -46,6 +46,7 @@ In Claude Code, while the skill is in use, it pre-approves one kind of command: 
   tar -xzf elkjs-0.9.3.tgz package/lib/elk.bundled.js
   ```
   Then compare `package/lib/elk.bundled.js` with Floorplan's copy, for example with `sha256sum` (macOS: `shasum -a 256`; Windows PowerShell: `Get-FileHash`).
+- **Two fonts from PumpUp's brand**, Hanken Grotesk and Instrument Serif (SIL Open Font License 1.1), are vendored in `skills/floorplan/assets/vendor/fonts/` with their licenses, like the Inter and JetBrains Mono fonts.
 - **One `new Function`** in `serve.mjs` loads the map's lookup code from `floorplan/query.mjs`, a file Floorplan's build wrote into your project. It never runs anything from the network.
 - **Health reads the middle part of tokens it finds** (it decodes them from base64) to tell what kind of token each is, so it can skip ones that are public by design. It never stores or shows the token itself.
 

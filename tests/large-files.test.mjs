@@ -40,7 +40,7 @@ test('the scan says which files it did not read and how to include them', () => 
 test('Health lists it as a large file and says it was not checked', () => {
   const big = graph.health.issues.find((i) => i.id === 'large-files');
   assert.ok(big, 'expected a large-files item');
-  assert.match(big.notes['f:app/rules.py'], /^1,500 lines: too big for Floorplan to read/);
+  assert.match(big.notes['f:app/rules.py'], /^1 500 lignes : trop gros pour que Floorplan le lise/);
 });
 
 test('the default limit reads a file over the old 512 KB limit', () => {

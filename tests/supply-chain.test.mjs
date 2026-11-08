@@ -136,8 +136,8 @@ test('no code is downloaded, decoded or built from text at run time', () => {
 
 test('every shipped file is source, text or a known kind of image or font', () => {
   const kinds = new Set(shipped.map((f) => path.extname(f).toLowerCase()));
-  assert.deepEqual([...kinds].sort(), ['.html', '.js', '.json', '.md', '.mjs', '.png', '.txt', '.woff2', '.yaml'].filter((k) => kinds.has(k)), 'kinds of file');
-  for (const k of kinds) assert.ok(['.html', '.js', '.json', '.md', '.mjs', '.png', '.txt', '.woff2', '.yaml'].includes(k), `unexpected kind of file: ${k}. ${UPDATE}`);
+  assert.deepEqual([...kinds].sort(), ['.html', '.js', '.json', '.md', '.mjs', '.png', '.ttf', '.txt', '.woff2', '.yaml'].filter((k) => kinds.has(k)), 'kinds of file');
+  for (const k of kinds) assert.ok(['.html', '.js', '.json', '.md', '.mjs', '.png', '.ttf', '.txt', '.woff2', '.yaml'].includes(k), `unexpected kind of file: ${k}. ${UPDATE}`);
 });
 
 test('vendored files are unchanged: the layout engine matches elkjs 0.9.3 on npm byte for byte', () => {
@@ -145,6 +145,13 @@ test('vendored files are unchanged: the layout engine matches elkjs 0.9.3 on npm
     // npm: elkjs@0.9.3, package/lib/elk.bundled.js
     'elk.bundled.js': 'b0745abd7f23cd91690a1587e377edbe19fd7233c783300290936720546216d4',
     'elkjs-LICENSE.md': null,
+    'fonts/HankenGrotesk-bold.ttf': null,
+    'fonts/HankenGrotesk-regular.ttf': null,
+    'fonts/HankenGroteskLight-regular.ttf': null,
+    'fonts/InstrumentSerif-italic.ttf': null,
+    'fonts/InstrumentSerif-regular.ttf': null,
+    'fonts/hanken-grotesk-LICENSE.txt': null,
+    'fonts/instrument-serif-LICENSE.txt': null,
     'fonts/inter-LICENSE.txt': null,
     'fonts/inter-latin-ext-wght-normal.woff2': null,
     'fonts/inter-latin-wght-normal.woff2': null,

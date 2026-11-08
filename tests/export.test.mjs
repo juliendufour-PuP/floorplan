@@ -16,7 +16,7 @@ const dataOf = (html) => JSON.parse(/<script>window\.FLOORPLAN = (.*?);<\/script
 /** Runs serve.mjs --export with these arguments; returns the exported page and what it printed. */
 function exportCli(...args) {
   const out = execFileSync(process.execPath, [serveJs(), '--export', ...args], { cwd: root, encoding: 'utf8' });
-  const file = /Exported the map to (.+)/.exec(out)[1].trim();
+  const file = /Carte exportée dans (.+)/.exec(out)[1].trim();
   return { out, html: fs.readFileSync(file, 'utf8'), file };
 }
 
@@ -61,7 +61,7 @@ test('the map has health, recent work, a note, a flow and a remote to leave out'
 
 test('by default the export keeps flows and notes, and leaves out health, recent work and this computer', () => {
   const { html, file, out } = exportCli();
-  assert.equal(path.basename(file), 'shop-map.html');
+  assert.equal(path.basename(file), 'shop-carte.html');
   assert.equal(path.dirname(file), path.join(fs.realpathSync(root), 'floorplan'));
   const g = dataOf(html);
   assert.match(g.meta.exported.at, /^\d{4}-\d\d-\d\dT/);
@@ -76,8 +76,8 @@ test('by default the export keeps flows and notes, and leaves out health, recent
   const here = readJson(path.join(root, 'floorplan', 'graph.json')).meta.root;
   assert.ok(here && !html.includes(here), 'no folder path from this computer');
   assert.ok(!html.includes('FLOORPLAN_SERVER='), 'no server details');
-  assert.match(out, /no Ask bar/);
-  assert.doesNotMatch(out, /Share it only with people you trust/);
+  assert.match(out, /sans barre de question/);
+  assert.doesNotMatch(out, /Ne le partagez qu'avec des personnes de confiance/);
 });
 
 test('health and recent work go in only when asked for, with a warning about health', () => {
@@ -86,7 +86,7 @@ test('health and recent work go in only when asked for, with a warning about hea
   assert.deepEqual(g.meta.exported.include, ['flows', 'notes', 'recent', 'health']);
   assert.ok(g.health.issues.length > 0);
   assert.equal(g.recent.items.length, 1);
-  assert.match(out, /Share it only with people you trust/);
+  assert.match(out, /Ne le partagez qu'avec des personnes de confiance/);
   // where a secret sits, never the secret itself
   assert.ok(!html.includes(FAKE_PASSWORD));
 });
@@ -123,7 +123,7 @@ test('the Export button downloads the copy, with flows requested since the last 
   const r = await api({ include: ['flows', 'health'], flows: [extra, { id: 'bad', steps: 'nope' }] }, { 'x-floorplan-token': token });
   assert.equal(r.status, 200);
   assert.match(r.headers.get('content-type'), /text\/html/);
-  assert.equal(r.headers.get('content-disposition'), 'attachment; filename="shop-map.html"');
+  assert.equal(r.headers.get('content-disposition'), 'attachment; filename="shop-carte.html"');
   const g = dataOf(await r.text());
   assert.deepEqual(g.meta.exported.include, ['flows', 'health']);
   assert.deepEqual(g.flows.map((f) => f.id), ['refund', 'custom-1']);
