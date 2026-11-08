@@ -54,7 +54,7 @@ const DATA_START = '<script>window.FLOORPLAN = ';
 function exportMap(include, extraFlows = []) {
   const html = fs.readFileSync(path.join(here, 'index.html'), 'utf8');
   const a = html.indexOf(DATA_START), b = html.indexOf(';</script>', a);
-  if (a < 0 || b < 0) throw Object.assign(new Error('This map is too old to export. Ask Claude or Codex to update the floorplan first.'), { plain: true });
+  if (a < 0 || b < 0) throw Object.assign(new Error('Cette carte est trop ancienne pour être exportée. Demandez d’abord à Claude ou à Codex de mettre à jour le floorplan.'), { plain: true });
   const g = JSON.parse(html.slice(a + DATA_START.length, b));
   const on = EXPORT_PARTS.filter((p) => include.includes(p));
   const out = {
@@ -71,13 +71,13 @@ function exportMap(include, extraFlows = []) {
   else if (out.health) { const list = readDismissed().map(({ reason, ...d }) => d); if (list.length) out.health = { ...out.health, dismissed: list }; else delete out.health.dismissed; }
   const json = JSON.stringify(out).replace(/<\/(script)/gi, '<\\/$1').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
   const slug = String(g.project?.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'floorplan';
-  return { html: html.slice(0, a + DATA_START.length) + json + html.slice(b), name: `${slug}-map.html`, include: on, plan: !!g.meta?.blueprint };
+  return { html: html.slice(0, a + DATA_START.length) + json + html.slice(b), name: `${slug}-carte.html`, include: on, plan: !!g.meta?.blueprint };
 }
 /** Flows requested from the map since it was last built, as the page sends them: checked and trimmed. */
 const cleanFlows = (list) => (Array.isArray(list) ? list : []).slice(0, 50)
   .filter((f) => f && typeof f.id === 'string' && Array.isArray(f.steps))
   .map((f) => ({
-    id: f.id.slice(0, 100), title: String(f.title || 'Flow').slice(0, 200), description: String(f.description || '').slice(0, 1000), custom: true,
+    id: f.id.slice(0, 100), title: String(f.title || 'Parcours').slice(0, 200), description: String(f.description || '').slice(0, 1000), custom: true,
     steps: f.steps.slice(0, 60).filter((s) => s && typeof s.ref === 'string').map((s) => ({ ref: s.ref.slice(0, 300), note: String(s.note || '').slice(0, 2000) })),
   }))
   .filter((f) => f.steps.length >= 2);
@@ -88,12 +88,12 @@ if (has('export')) {
     const x = exportMap(include);
     const file = path.resolve(dest && !dest.startsWith('--') ? dest : path.join(here, x.name));
     fs.writeFileSync(file, x.html);
-    console.log(`Exported the map to ${file}`);
-    const label = { flows: 'flows and the tour', notes: 'notes', recent: 'recent work', health: x.plan ? 'the design review' : 'the health check' };
-    console.log(`Includes: the map${x.include.map((p) => ', ' + label[p]).join('')}. One file that opens in any browser, with no Ask bar.`);
-    if (x.include.includes('health') && !x.plan) console.log('It includes the health check: which endpoints are open and where secrets sit in the code (never their values). Share it only with people you trust.');
+    console.log(`Carte exportée dans ${file}`);
+    const label = { flows: 'les parcours et la visite guidée', notes: 'les notes', recent: 'le travail récent', health: x.plan ? 'la revue de conception' : 'le bilan de santé' };
+    console.log(`Contient : la carte${x.include.map((p) => ', ' + label[p]).join('')}. Un seul fichier, lisible dans n'importe quel navigateur, sans barre de question.`);
+    if (x.include.includes('health') && !x.plan) console.log("Il contient le bilan de santé : les points d'accès ouverts et l'emplacement des secrets dans le code (jamais leurs valeurs). Ne le partagez qu'avec des personnes de confiance.");
     process.exit(0);
-  } catch (e) { console.error(`✗ Couldn't export the map: ${e.message}`); process.exit(1); }
+  } catch (e) { console.error(`✗ Impossible d'exporter la carte : ${e.message}`); process.exit(1); }
 }
 const wantPort = Number(opt('port', 4378));
 const idleExit = Number(opt('idle-exit', 0)) * 60000; // stop this long after the last tab closes (0 = never)
@@ -192,10 +192,13 @@ function load() {
   G = g; core = c;
   // kinds of request: a question (answer + board), a new guided flow, and for a blueprint, a change to the
   // plan. Codex reads its schema from a file.
+  // the person reads the answers in French; a change also writes new plan text in the plan's own language
+  const FR = '\n\nRéponds toujours en français, dans un langage simple.';
+  const FR_PLAN = `${FR} Écris les nouveaux textes du plan (noms, descriptions, notes, questions) dans la même langue que le plan existant, sans traduire les identifiants, les chemins ni les noms techniques.`;
   MODES = {
-    ask: { instructions: core.floorplanAskInstructions(G, 'cli'), schema: core.FLOORPLAN_ANSWER_SCHEMA, file: path.join(here, '.cache', 'answer-schema.json') },
-    flow: { instructions: core.floorplanFlowInstructions(G, 'cli'), schema: core.FLOORPLAN_FLOW_SCHEMA, file: path.join(here, '.cache', 'flow-schema.json') },
-    ...(G.meta?.blueprint && canChange ? { change: { instructions: core.floorplanChangeInstructions(G), schema: core.FLOORPLAN_CHANGE_SCHEMA, file: path.join(here, '.cache', 'change-schema.json') } } : {}),
+    ask: { instructions: core.floorplanAskInstructions(G, 'cli') + FR, schema: core.FLOORPLAN_ANSWER_SCHEMA, file: path.join(here, '.cache', 'answer-schema.json') },
+    flow: { instructions: core.floorplanFlowInstructions(G, 'cli') + FR, schema: core.FLOORPLAN_FLOW_SCHEMA, file: path.join(here, '.cache', 'flow-schema.json') },
+    ...(G.meta?.blueprint && canChange ? { change: { instructions: core.floorplanChangeInstructions(G) + FR_PLAN, schema: core.FLOORPLAN_CHANGE_SCHEMA, file: path.join(here, '.cache', 'change-schema.json') } } : {}),
   };
   if (ENGINES[engine]?.schemaFile) {
     fs.mkdirSync(path.join(here, '.cache'), { recursive: true });
@@ -284,28 +287,28 @@ function describeCommand(command) {
   if (parts.length) {
     const one = ([, cmd, rest]) => {
       const a = rest.replace(/--\w+\s+\S+/g, '').replace(/["']/g, '').trim();
-      return { overview: 'Reading the map overview', find: a ? `Searching the map for "${a}"` : 'Searching the map', show: `Looking at ${a.split(/\s+/).map(nameFor).join(', ')}`, path: `Tracing a path ${a.split(/\s+/).map(nameFor).join(' → ')}` }[cmd] || 'Querying the map';
+      return { overview: 'Lecture de la vue d’ensemble de la carte', find: a ? `Recherche de « ${a} » sur la carte` : 'Recherche sur la carte', show: `Examen de ${a.split(/\s+/).map(nameFor).join(', ')}`, path: `Tracé d’un chemin ${a.split(/\s+/).map(nameFor).join(' → ')}` }[cmd] || 'Interrogation de la carte';
     };
-    return parts.slice(0, 2).map(one).join(' · ') + (parts.length > 2 ? ` (+${parts.length - 2} more)` : '');
+    return parts.slice(0, 2).map(one).join(' · ') + (parts.length > 2 ? ` (+${parts.length - 2} autre${parts.length - 2 > 1 ? 's' : ''})` : '');
   }
   const first = cmds[0] || '';
   if (/^(rg|grep|git grep|Select-String|findstr)\b/i.test(first) && !/\s--files\b/.test(first)) {
     const pat = /\s(["'])(.+?)\1/.exec(first)?.[2] || /\s(?:-Pattern\s+)?([^\s-][^\s]*)/i.exec(first.replace(/^\S+(\s+-\S+)*/, ''))?.[1];
-    return pat ? `Searching code for "${pat}"` : 'Searching code';
+    return pat ? `Recherche de « ${pat} » dans le code` : 'Recherche dans le code';
   }
-  if (/^(rg\s.*--files|ls|dir|Get-ChildItem|gci|find|tree)\b/i.test(first)) return 'Listing files';
+  if (/^(rg\s.*--files|ls|dir|Get-ChildItem|gci|find|tree)\b/i.test(first)) return 'Liste des fichiers';
   if (/^(cat|type|Get-Content|gc|sed|head|tail|nl|more|less)\b/i.test(first)) {
     const file = [...first.matchAll(/[\w@.\\/-]+\.\w{1,6}\b/g)].map((m) => m[0]).pop();
-    return file ? `Reading ${rel(file)}` : 'Reading a file';
+    return file ? `Lecture de ${rel(file)}` : 'Lecture d’un fichier';
   }
-  return 'Running a command';
+  return 'Exécution d’une commande';
 }
 function describeTool(name, input = {}) {
   if (name === 'Bash') return describeCommand(input.command);
   // a long result the CLI saved to read back in parts lives outside the project
-  if (name === 'Read') return /[\\/]tool-results[\\/]/.test(input.file_path || '') ? 'Reading the rest of a long file' : `Reading ${rel(input.file_path)}`;
-  if (name === 'Grep') return `Searching code for "${input.pattern}"`;
-  if (name === 'Glob') return `Listing ${input.pattern}`;
+  if (name === 'Read') return /[\\/]tool-results[\\/]/.test(input.file_path || '') ? 'Lecture de la suite d’un long fichier' : `Lecture de ${rel(input.file_path)}`;
+  if (name === 'Grep') return `Recherche de « ${input.pattern} » dans le code`;
+  if (name === 'Glob') return `Liste de ${input.pattern}`;
   return name;
 }
 function parseAnswer(ev) {
@@ -313,7 +316,7 @@ function parseAnswer(ev) {
   const t = String(ev.result || '');
   const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(t);
   for (const cand of [t, fence?.[1], t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1)]) { try { const v = JSON.parse(cand); if (v && typeof v === 'object') return v; } catch {} }
-  return { title: 'Answer', answer: t, items: [] };
+  return { title: 'Réponse', answer: t, items: [] };
 }
 const failCode = (msg) => /not logged in|logged out|\/login|log ?in again|sign in|authenticat|unauthori[sz]ed|\b401\b/i.test(msg) ? 'not_logged_in'
   : /usage limit|rate limit|too many requests|\b429\b/i.test(msg) ? 'rate_limited' : 'cli_error';
@@ -329,7 +332,7 @@ function claudeRun(body, mode) {
     onEvent(ev, out) {
       if (ev.type === 'assistant') for (const c of ev.message?.content || []) if (c.type === 'tool_use') out.progress(describeTool(c.name, c.input));
       if (ev.type !== 'result') return;
-      if (ev.is_error) out.fail(String(ev.result || ev.subtype || 'Claude Code reported an error'));
+      if (ev.is_error) out.fail(String(ev.result || ev.subtype || 'Claude Code a signalé une erreur'));
       else out.answer({ ...parseAnswer(ev), session: ev.session_id });
     },
   };
@@ -353,7 +356,7 @@ function codexRun(body, mode) {
       if (ev.type === 'item.started' && ev.item?.type === 'command_execution') out.progress(describeCommand(ev.item.command));
       if (ev.type === 'item.completed' && ev.item?.type === 'agent_message') last = String(ev.item.text || '');
       if (ev.type === 'error') error = String(ev.message || error);
-      if (ev.type === 'turn.failed') out.fail(String(ev.error?.message || error || 'Codex reported an error'));
+      if (ev.type === 'turn.failed') out.fail(String(ev.error?.message || error || 'Codex a signalé une erreur'));
       if (ev.type === 'turn.completed') {
         const a = parseAnswer({ result: last });
         convos.set(session, [...turns, { q: question.slice(0, 500), a: String(a.answer || '').slice(0, 1500) }].slice(-4));
@@ -377,7 +380,7 @@ function runAgent(res, send, body) {
     // working out and writing a whole updated plan has long stretches with nothing to report: say so after a quiet spell
     let quiet = null, said = '';
     const say = (text) => { if (!done && text !== said) { said = text; send('progress', { text }); } };
-    const hush = () => { clearTimeout(quiet); if (body.mode === 'change' && !done) quiet = setTimeout(() => say('Working on the updated plan'), 12000); };
+    const hush = () => { clearTimeout(quiet); if (body.mode === 'change' && !done) quiet = setTimeout(() => say('Préparation du plan mis à jour'), 12000); };
     const out = {
       progress: (text) => { if (!done) { say(text); hush(); } },
       answer: (data) => { if (!done) { done = true; clearTimeout(quiet); resolve(data); } },
@@ -398,7 +401,7 @@ function runAgent(res, send, body) {
     child.on('error', (e) => out.fail(e.message));
     child.on('close', (code) => {
       running.delete(id);
-      out.fail(run.lastError?.() || stderr.trim() || `${engine} exited with code ${code}`);
+      out.fail(run.lastError?.() || stderr.trim() || `${engine} s’est arrêté avec le code ${code}`);
     });
     // the browser went away (closed tab, Stop): don't leave the CLI working. Note req 'close' fires as soon as
     // the body is read, so watch the response instead.
@@ -408,7 +411,7 @@ function runAgent(res, send, body) {
 function ask(req, res, body) {
   res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
   const send = (event, data) => { if (!res.writableEnded) res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`); };
-  if (!cli) { send('failure', { code: 'cli_missing', message: `${ENGINES[want].name} not found.` }); return res.end(); }
+  if (!cli) { send('failure', { code: 'cli_missing', message: `${ENGINES[want].name} introuvable.` }); return res.end(); }
   if (body.mode === 'change') return changePlan(res, send, body);
   runAgent(res, send, body)
     .then((a) => send('answer', a), (e) => { if (e !== CLOSED) send('failure', { code: failCode(e.message), message: e.message }); })
@@ -436,7 +439,7 @@ function restore(dir) {
 function skillScript(name, ...args) {
   let dir;
   try { dir = JSON.parse(fs.readFileSync(path.join(here, '.cache', 'skill.json'), 'utf8')).dir; } catch {}
-  if (!dir || !fs.existsSync(path.join(dir, 'scripts', name))) throw new Error('This map’s server can’t find the Floorplan scripts. Ask Claude Code or Codex to update the floorplan once, then try again.');
+  if (!dir || !fs.existsSync(path.join(dir, 'scripts', name))) throw new Error('Le serveur de cette carte ne trouve pas les scripts Floorplan. Demandez une fois à Claude Code ou à Codex de mettre à jour le floorplan, puis réessayez.');
   try { return execFileSync(process.execPath, [path.join(dir, 'scripts', name), root, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, timeout: 120000 }); }
   catch (e) { throw Object.assign(new Error(String(e.stdout || '') + String(e.stderr || '') || e.message), { checks: true }); }
 }
@@ -455,7 +458,7 @@ function problems(text) {
 function applyChange(data, request, lastTry) {
   const parse = (name, text) => { try { const v = JSON.parse(String(text || '')); return v && typeof v === 'object' && !Array.isArray(v) ? v : null; } catch { return null; } };
   const plan = parse('plan', data.plan), arch = parse('architecture', data.architecture);
-  if (!plan || !arch) return { errors: [`${!plan ? 'plan' : 'architecture'} isn't a complete JSON object`] };
+  if (!plan || !arch) return { errors: [`${!plan ? 'plan' : 'architecture'} n’est pas un objet JSON complet`] };
   const snap = snapshot();
   const write = (f, v) => fs.writeFileSync(path.join(here, f), JSON.stringify(v, null, 2) + '\n');
   try {
@@ -464,11 +467,11 @@ function applyChange(data, request, lastTry) {
     const items = (Array.isArray(data.changes) ? data.changes : []).filter((c) => c && typeof c.ref === 'string').map((c) => ({ ref: c.ref, change: c.change === 'changed' ? 'changed' : 'new', note: String(c.note || '') }));
     // the Recent work panel shows plain text: the summary's first paragraph, without Markdown marks
     const plain = String(data.summary || '').split(/\n\s*\n/)[0].replace(/\*\*|__|`/g, '').replace(/\s+/g, ' ').trim();
-    write('recent-work.json', { updatedAt: new Date().toISOString(), tasks: [{ title: String(data.title || 'Changed the plan').slice(0, 80), request, summary: plain, status: 'planned, not built', items }] });
+    write('recent-work.json', { updatedAt: new Date().toISOString(), tasks: [{ title: String(data.title || 'Plan modifié').slice(0, 80), request, summary: plain, status: 'planned, not built', items }] });
     skillScript('plan.mjs');
     const check = skillScript('build.mjs', '--check');
     const unassigned = +(/(\d+) unassigned/.exec(check)?.[1] || 0);
-    if (unassigned && !lastTry) throw Object.assign(new Error(''), { checks: true, list: [`${unassigned} planned file(s) fall under no node's paths in architecture.json (add or widen globs)`] });
+    if (unassigned && !lastTry) throw Object.assign(new Error(''), { checks: true, list: [`${unassigned} fichier(s) prévu(s) hors des chemins (paths) de tous les nœuds d’architecture.json (ajoutez ou élargissez des globs)`] });
     skillScript('build.mjs', '--no-claude-md');
     return { ok: true, undo: path.basename(snap) };
   } catch (e) {
@@ -481,8 +484,8 @@ function applyChange(data, request, lastTry) {
 }
 async function changePlan(res, send, body) {
   const request = String(body.question || '').slice(0, 4000);
-  if (!MODES.change) { send('failure', { code: 'cli_error', message: G.meta?.blueprint ? `${ENGINES[engine].name} can't change a plan from the map.` : 'Only a blueprint can be changed from the map.' }); return res.end(); }
-  if (changing) { send('failure', { code: 'busy', message: 'Another change to this plan is still being made. Try again when it’s done.' }); return res.end(); }
+  if (!MODES.change) { send('failure', { code: 'cli_error', message: G.meta?.blueprint ? `${ENGINES[engine].name} ne peut pas modifier un plan depuis la carte.` : 'Seul un plan prévisionnel peut être modifié depuis la carte.' }); return res.end(); }
+  if (changing) { send('failure', { code: 'busy', message: 'Une autre modification de ce plan est en cours. Réessayez quand elle sera terminée.' }); return res.end(); }
   changing = true;
   let session, errors = null;
   try {
@@ -492,7 +495,7 @@ async function changePlan(res, send, body) {
         : request;
       const data = await runAgent(res, send, { question, session, mode: 'change' });
       session = data.session || session;
-      send('progress', { text: 'Checking the updated plan' });
+      send('progress', { text: 'Vérification du plan mis à jour' });
       const r = applyChange(data, request, attempt === 1);
       if (r.ok) {
         console.log(`plan changed: ${data.title || request.slice(0, 60)}`);
@@ -500,9 +503,9 @@ async function changePlan(res, send, body) {
         return;
       }
       errors = r.errors;
-      send('progress', { text: `Fixing ${errors.length === 1 ? 'a problem' : `${errors.length} problems`} the checks found` });
+      send('progress', { text: errors.length === 1 ? 'Correction d’un problème trouvé par les vérifications' : `Correction de ${errors.length} problèmes trouvés par les vérifications` });
     }
-    send('failure', { code: 'change_invalid', message: `The updated plan didn't pass the checks, so nothing changed:\n${errors.slice(0, 6).map((e) => `- ${e}`).join('\n')}` });
+    send('failure', { code: 'change_invalid', message: `Le plan mis à jour n’a pas passé les vérifications, rien n’a donc changé :\n${errors.slice(0, 6).map((e) => `- ${e}`).join('\n')}` });
   } catch (e) {
     if (e !== CLOSED) send('failure', { code: failCode(String(e.message || e)), message: String(e.message || e) });
   } finally { changing = false; res.end(); }
@@ -510,12 +513,12 @@ async function changePlan(res, send, body) {
 /** Puts back the files a change replaced (the newest first), and redraws. */
 function undoChange() {
   const all = fs.existsSync(historyDir) ? fs.readdirSync(historyDir).sort() : [];
-  if (!all.length) return { ok: false, error: 'Nothing to undo.' };
+  if (!all.length) return { ok: false, error: 'Rien à annuler.' };
   const dir = path.join(historyDir, all[all.length - 1]);
   restore(dir);
   try { skillScript('plan.mjs'); skillScript('build.mjs', '--no-claude-md'); } catch (e) {
     console.error(`✗ Undo couldn't redraw the plan: ${e.message || e}`);
-    return { ok: false, error: 'Couldn’t redraw the previous plan. The details are in the map server’s output.' };
+    return { ok: false, error: 'Impossible de redessiner le plan précédent. Les détails sont dans la sortie du serveur de la carte.' };
   }
   fs.rmSync(dir, { recursive: true, force: true });
   return { ok: true, left: all.length - 1 };
@@ -594,7 +597,7 @@ const server = http.createServer((req, res) => {
       }
     }
     if (req.method === 'POST' && url.pathname === '/api/plan/undo') {
-      const r = changing ? { ok: false, error: 'A change is still being made.' } : undoChange();
+      const r = changing ? { ok: false, error: 'Une modification est encore en cours.' } : undoChange();
       res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(r));
     }
     if (req.method === 'POST' && url.pathname === '/api/cancel') { for (const c of running.values()) c.kill(); res.writeHead(204); return res.end(); }
@@ -608,9 +611,9 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': TYPES['.html'], 'Content-Disposition': `attachment; filename="${x.name}"`, 'Cache-Control': 'no-store' });
           res.end(x.html);
         } catch (e) {
-          console.error(`✗ Couldn't export the map: ${e.message}`);
+          console.error(`✗ Impossible d'exporter la carte : ${e.message}`);
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: e.plain ? e.message : 'The map’s server couldn’t export it. The details are in its output.' }));
+          res.end(JSON.stringify({ error: e.plain ? e.message : 'Le serveur de la carte n’a pas pu l’exporter. Les détails sont dans sa sortie.' }));
         }
       });
       return;
@@ -635,7 +638,7 @@ const server = http.createServer((req, res) => {
 let port = wantPort;
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE' && port < wantPort + 20) { port++; server.listen(port, '127.0.0.1'); return; }
-  console.error(`✗ Couldn't start the map server: ${e.message}`);
+  console.error(`✗ Impossible de démarrer le serveur de la carte : ${e.message}`);
   process.exit(1);
 });
 server.listen(port, '127.0.0.1');

@@ -35,7 +35,8 @@
   const ago = (iso) => {
     const t = Date.parse(iso); if (!t) return '';
     const m = Math.round((Date.now() - t) / 60000);
-    return m < 2 ? 'just now' : m < 60 ? `${m} minutes ago` : m < 48 * 60 ? `${Math.round(m / 60)} hours ago` : `${Math.round(m / 1440)} days ago`;
+    const hr = Math.round(m / 60);
+    return m < 2 ? 'à l’instant' : m < 60 ? `il y a ${m} minutes` : m < 48 * 60 ? `il y a ${hr} heure${hr > 1 ? 's' : ''}` : `il y a ${Math.round(m / 1440)} jours`;
   };
   const itemsOf = (ti) => items.filter((it) => ti == null || it.task === ti);
 
@@ -43,15 +44,15 @@
   function showRecent(ti) {
     const one = ti != null ? tasks[ti] : tasks.length === 1 ? tasks[0] : null;
     SC.showBoard({
-      kind: 'Recent work', icon: 'recent',
-      title: one ? one.title : 'Recent work',
-      question: one ? (one.request ? `You asked: ${one.request}` : '') : tasks.map((t) => t.title).join(' · '),
+      kind: 'Travaux récents', icon: 'recent',
+      title: one ? one.title : 'Travaux récents',
+      question: one ? (one.request ? `Votre demande : ${one.request}` : '') : tasks.map((t) => t.title).join(' · '),
       answer: one ? one.summary : tasks.map((t) => `**${t.title}.** ${t.summary}`).join('\n\n'),
-      items: itemsOf(ti != null ? ti : null).map((it) => ({ id: it.id, note: it.note || (it.change === 'new' ? 'New' : 'Changed') })),
+      items: itemsOf(ti != null ? ti : null).map((it) => ({ id: it.id, note: it.note || (it.change === 'new' ? 'Nouveau' : 'Modifié') })),
     });
   }
 
-  const btn = SC.addHeaderButton({ id: 'btn-recent', label: 'Recent work', icon: 'recent', title: 'What was just worked on, on one board', onClick: () => showRecent() });
+  const btn = SC.addHeaderButton({ id: 'btn-recent', label: 'Travaux récents', icon: 'recent', title: 'Ce qui vient d’être fait, réuni sur une seule vue', onClick: () => showRecent() });
   const b = document.createElement('span');
   b.className = 'badge';
   b.textContent = String(items.length);
@@ -60,11 +61,11 @@
   // codebase panel: each task, what was asked, what was done, and a way to see its cards
   SC.addPanelSection('overview', () => ({
     top: true,
-    html: `<div class="sec"><h3>Recent work <span class="c">${items.length}</span></h3>${R.updatedAt ? `<div class="rw-when">Updated ${h(ago(R.updatedAt))}</div>` : ''}<div style="margin-top:10px">${tasks.map((t, i) => itemsOf(i).length ? `
+    html: `<div class="sec"><h3>Travaux récents <span class="c">${items.length}</span></h3>${R.updatedAt ? `<div class="rw-when">Mis à jour ${h(ago(R.updatedAt))}</div>` : ''}<div style="margin-top:10px">${tasks.map((t, i) => itemsOf(i).length ? `
       <div class="rw-task"><div class="rw-tt">${h(t.title)}</div>
-        ${t.request ? `<div class="rw-q"><b>You asked:</b> ${h(t.request)}</div>` : ''}
+        ${t.request ? `<div class="rw-q"><b>Votre demande :</b> ${h(t.request)}</div>` : ''}
         ${t.summary ? `<div class="rw-s">${h(t.summary)}</div>` : ''}
-        <div class="rw-a"><button class="btn soft" data-rw="${i}">${SC.iconI('recent')}Show ${SC.plural(itemsOf(i).length, 'card')}</button></div></div>` : '').join('')}</div></div>`,
+        <div class="rw-a"><button class="btn soft" data-rw="${i}">${SC.iconI('recent')}Afficher ${SC.plural(itemsOf(i).length, 'carte')}</button></div></div>` : '').join('')}</div></div>`,
     bind: (el) => el.querySelectorAll('[data-rw]').forEach((x) => x.addEventListener('click', () => showRecent(+x.dataset.rw))),
   }));
 
@@ -75,13 +76,13 @@
     const mine = items.filter((it) => it.id === key);
     const inside = items.filter((it) => it.id !== key && SC.chain(it.id).includes(key));
     if (!mine.length && !inside.length) return '';
-    if (!mine.length) return { top: true, html: `<div class="sec"><h3>Recent work inside <span class="c">${inside.length}</span></h3><div class="list">${inside.map((it) => {
+    if (!mine.length) return { top: true, html: `<div class="sec"><h3>Travaux récents à l’intérieur <span class="c">${inside.length}</span></h3><div class="list">${inside.map((it) => {
       const i = SC.info(it.id);
       return `<a class="row" data-go="${h(it.id)}"><span class="dot" style="background:var(--recent)"></span><span class="rt"><div class="rn">${h(i.name)}</div>${it.note ? `<div class="rd">${h(it.note)}</div>` : ''}</span></a>`;
     }).join('')}</div></div>` };
     return { top: true, html: `<div class="sec">${mine.map((it) => {
       const t = tasks[it.task] || {};
-      return `<div class="rw-note"><div class="rw-h">${it.change === 'new' ? 'New' : 'Changed'} · ${h(t.title || 'Recent work')}</div>${h(it.note || '')}${t.request ? `<div class="rw-q" style="margin:6px 0 0"><b>You asked:</b> ${h(t.request)}</div>` : ''}</div>`;
+      return `<div class="rw-note"><div class="rw-h">${it.change === 'new' ? 'Nouveau' : 'Modifié'} · ${h(t.title || 'Travaux récents')}</div>${h(it.note || '')}${t.request ? `<div class="rw-q" style="margin:6px 0 0"><b>Votre demande :</b> ${h(t.request)}</div>` : ''}</div>`;
     }).join('')}</div>` };
   });
 

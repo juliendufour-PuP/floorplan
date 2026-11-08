@@ -35,21 +35,35 @@ function boot({ saved, deviceLight = false, storageThrows = false } = {}) {
   return { attrs, store, mq, events, theme: win.floorplanTheme, classes };
 }
 
-test('the page has a dark and a light set of colours, and dark stays the default', () => {
-  assert.match(html, /:root \{[^}]*--bg: #0f0f0f;/);
-  assert.match(html, /:root\[data-theme="light"\] \{[^}]*--bg: #f3f3f1;/);
+test('the page has a dark and a light set of colours, with the PumpUp greens and white for light', () => {
+  assert.match(html, /:root \{[^}]*--bg: #151C15;/);
+  assert.match(html, /:root\[data-theme="light"\] \{ --bg: #FFFFFF;/);
   assert.match(html, /:root\[data-theme="light"\] \{[^}]*color-scheme: light;/);
   // every colour variable dark defines is also given a light value
   const vars = (block) => new Set([...block.matchAll(/(--[\w-]+):/g)].map((m) => m[1]));
   const dark = vars(html.match(/\n:root \{([\s\S]*?)\n\}/)[1]);
   const light = vars(html.match(/:root\[data-theme="light"\] \{([\s\S]*?)\n\}/)[1]);
-  const sameInBoth = new Set(['--sans', '--mono', '--r-card', '--r-panel', '--r-ctl', '--ease', '--ease-io', '--panel-w', '--pw', '--gutter', '--m-ANY', '--focus']);
+  const sameInBoth = new Set(['--sans', '--serif', '--mono', '--r-card', '--r-panel', '--r-ctl', '--ease', '--ease-io', '--panel-w', '--pw', '--gutter', '--m-ANY', '--focus']);
   for (const v of dark) assert.ok(light.has(v) || sameInBoth.has(v), `${v} has no light value`);
 });
 
+test('light is the default: a first visit with nothing saved gets the light page', () => {
+  assert.match(bootScript(), /let mem = 'light'/);
+  assert.equal(boot({}).attrs['data-theme'], 'light');
+  assert.equal(boot({ deviceLight: false }).attrs['data-theme'], 'light');
+});
+
 test('the page no longer paints with fixed white tints that would vanish on light', () => {
-  // the light block itself may use white (white boxes); everywhere else tints go through --ink
-  const outsideLight = html.replace(/:root\[data-theme="light"\] \{[\s\S]*?\n\}/, '');
+  // the light rules may use white (white boxes, and tints on the dark green cards that light shows); everywhere else tints go through --ink
+  let outsideLight = html;
+  for (let m; (m = /:root\[data-theme="light"\][^{]*\{/.exec(outsideLight));) {
+    let depth = 0, end = m.index;
+    for (let i = m.index + m[0].length - 1; i < outsideLight.length; i++) {
+      if (outsideLight[i] === '{') depth++;
+      else if (outsideLight[i] === '}' && --depth === 0) { end = i + 1; break; }
+    }
+    outsideLight = outsideLight.slice(0, m.index) + outsideLight.slice(end);
+  }
   const left = outsideLight.match(/rgba\(255, 255, 255, [.\d]+\)/g) || [];
   assert.equal(left.length, 0, `fixed white tints left: ${left.join(' ')}`);
 });
@@ -60,9 +74,9 @@ test('the boot script is in the head, before the page is drawn', () => {
 });
 
 test('Auto follows the device, live', () => {
-  const dark = boot({ deviceLight: false });
+  const dark = boot({ saved: 'auto', deviceLight: false });
   assert.equal(dark.attrs['data-theme'], 'dark');
-  const light = boot({ deviceLight: true });
+  const light = boot({ saved: 'auto', deviceLight: true });
   assert.equal(light.attrs['data-theme'], 'light');
   dark.mq.matches = true; dark.mq.change();
   assert.equal(dark.attrs['data-theme'], 'light');
@@ -80,17 +94,17 @@ test('a saved choice wins over the device, and a new choice is saved', () => {
 });
 
 test('an unknown saved value is ignored, and blocked storage still works for this visit', () => {
-  assert.equal(boot({ saved: 'purple', deviceLight: false }).attrs['data-theme'], 'dark');
+  assert.equal(boot({ saved: 'purple', deviceLight: false }).attrs['data-theme'], 'light');
   const b = boot({ storageThrows: true, deviceLight: false });
-  b.theme.set('light');
-  assert.equal(b.attrs['data-theme'], 'light');
-  assert.equal(b.theme.get(), 'light');
+  b.theme.set('dark');
+  assert.equal(b.attrs['data-theme'], 'dark');
+  assert.equal(b.theme.get(), 'dark');
 });
 
 test('the Theme button is in the built page with a plain label, a 44 px target and a visible focus ring', () => {
   assert.match(html, /\/\* ui\/05-theme\.js \*\//);
-  assert.ok(html.includes('Theme: ${NAME[c]}. Press for ${WORD[NEXT[c]]}.'));
-  assert.ok(html.includes("auto: 'Auto (follows your device)'"));
+  assert.ok(html.includes('Thème : ${NAME[c]}. Appuyez pour passer en ${WORD[NEXT[c]]}.'));
+  assert.ok(html.includes("auto: 'Auto (suit votre appareil)'"));
   assert.match(html, /#theme-toggle \{[^}]*width: 44px; height: 44px;/);
   assert.match(html, /#theme-toggle:focus-visible \{ outline: 2px solid/);
   assert.match(html, /prefers-reduced-motion: reduce\) \{ #theme-toggle/);

@@ -52,7 +52,7 @@ test('with only Codex installed, questions run through Codex, read-only and out 
   assert.equal(s.page.cli, true);
 
   const events = await ask(s, 'How do refunds work?');
-  assert.deepEqual(pick(events, 'progress').map((p) => p.text), ['Searching the map for "refund"', 'Reading shop-api/routes/orders.js']);
+  assert.deepEqual(pick(events, 'progress').map((p) => p.text), ['Recherche de « refund » sur la carte', 'Lecture de shop-api/routes/orders.js']);
   const [answer] = pick(events, 'answer');
   assert.equal(answer.title, 'Refunds');
   assert.deepEqual(answer.items.map((i) => i.id), ['f:shop-api/routes/orders.js']);
@@ -110,7 +110,7 @@ test('the Claude Code CLI comes first for a map Claude built, with read-only too
   const s = await serve({ FLOORPLAN_CLAUDE: path.join(FAKE, 'fake-claude.mjs'), FLOORPLAN_CODEX: path.join(FAKE, 'fake-codex.mjs') });
   assert.equal(s.page.engine, 'claude');
   const events = await ask(s, 'How do refunds work?');
-  assert.deepEqual(pick(events, 'progress').map((p) => p.text), ['Reading the map overview', 'Reading shop-api/routes/orders.js']);
+  assert.deepEqual(pick(events, 'progress').map((p) => p.text), ['Lecture de la vue d’ensemble de la carte', 'Lecture de shop-api/routes/orders.js']);
   const [answer] = pick(events, 'answer');
   assert.equal(answer.session, 'test-session');
   await ask(s, 'And then?', answer.session);
@@ -127,7 +127,7 @@ test('--engine picks one CLI and never falls back to the other', async () => {
   assert.equal(s.page.want, 'codex');
   const [failure] = pick(await ask(s, 'Anything?'), 'failure');
   assert.equal(failure.code, 'cli_missing');
-  assert.match(failure.message, /Codex not found/);
+  assert.match(failure.message, /Codex introuvable/);
 });
 
 // Windows: a newer npm install of Claude Code has the real program at <npm>/node_modules/@anthropic-ai/claude-code/bin/claude.exe, no cli.js, and only

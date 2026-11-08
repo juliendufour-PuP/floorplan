@@ -241,7 +241,7 @@ if (fs.existsSync(customFile)) {
   for (const fl of custom) {
     const steps = (fl.steps || []).map((s) => ({ ref: resolveStep(s.ref), note: s.note || '' })).filter((s) => s.ref);
     dropped += (fl.steps || []).length - steps.length;
-    if (steps.length >= 2 && isStr(fl.id) && !outFlows.some((x) => x.id === fl.id)) outFlows.push({ id: fl.id, title: fl.title || 'Flow', description: fl.description || '', steps, custom: true });
+    if (steps.length >= 2 && isStr(fl.id) && !outFlows.some((x) => x.id === fl.id)) outFlows.push({ id: fl.id, title: fl.title || 'Parcours', description: fl.description || '', steps, custom: true });
   }
   if (dropped) warn(`${dropped} step(s) in custom-flows.json point at code that no longer exists and were left out.`);
 }
@@ -389,7 +389,7 @@ const graph = {
       tags: n.tags || [], paths: n.paths || [], packages: n.packages || [], hosts: n.hosts || [],
       stats: { ...stats.get(n.id), repos: [...stats.get(n.id).repos] },
     })),
-    ...(unassigned.length ? [{ id: 'unassigned', parent: null, label: 'Unassigned', kind: 'misc', summary: 'Files no node claims. Add globs in architecture.json to place them.', details: '', tags: [], paths: [], packages: [], hosts: [], stats: { ...stats.get('unassigned'), repos: [...stats.get('unassigned').repos] } }] : []),
+    ...(unassigned.length ? [{ id: 'unassigned', parent: null, label: 'Non classé', kind: 'misc', summary: 'Fichiers qu’aucun nœud ne réclame. Ajoutez des globs dans architecture.json pour les placer.', details: '', tags: [], paths: [], packages: [], hosts: [], stats: { ...stats.get('unassigned'), repos: [...stats.get('unassigned').repos] } }] : []),
   ],
   files: included.map((f) => {
     const d = fileDesc.get(f.path);
@@ -437,14 +437,20 @@ const FONT_RANGES = {
   'latin-ext': 'U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF',
 };
 const fontCss = [['Inter', 'inter'], ['JetBrains Mono', 'jetbrains-mono']].flatMap(([family, file]) => Object.entries(FONT_RANGES).map(([subset, range]) =>
-  `@font-face{font-family:"${family}";font-style:normal;font-display:swap;font-weight:100 900;unicode-range:${range};src:url(data:font/woff2;base64,${fs.readFileSync(path.join(vendor, 'fonts', `${file}-${subset}-wght-normal.woff2`)).toString('base64')}) format("woff2")}`)).join('\n');
+  `@font-face{font-family:"${family}";font-style:normal;font-display:swap;font-weight:100 900;unicode-range:${range};src:url(data:font/woff2;base64,${fs.readFileSync(path.join(vendor, 'fonts', `${file}-${subset}-wght-normal.woff2`)).toString('base64')}) format("woff2")}`)).join('\n')
+  // Charte PumpUp : Hanken Grotesk (texte) et Instrument Serif (titres), en TTF statiques
+  + '\n' + [['Hanken Grotesk', 'HankenGroteskLight-regular', '100 349', 'normal'], ['Hanken Grotesk', 'HankenGrotesk-regular', '350 549', 'normal'],
+    ['Hanken Grotesk', 'HankenGrotesk-bold', '550 900', 'normal'], ['Instrument Serif', 'InstrumentSerif-regular', '100 900', 'normal'],
+    ['Instrument Serif', 'InstrumentSerif-italic', '100 900', 'italic']]
+    .filter(([, file]) => fs.existsSync(path.join(vendor, 'fonts', `${file}.ttf`)))
+    .map(([family, file, weight, style]) => `@font-face{font-family:"${family}";font-style:${style};font-display:swap;font-weight:${weight};src:url(data:font/ttf;base64,${fs.readFileSync(path.join(vendor, 'fonts', `${file}.ttf`)).toString('base64')}) format("truetype")}`).join('\n');
 const graphQuery = fs.readFileSync(path.join(SKILL_DIR, 'assets', 'graph-query.js'), 'utf8');
 const page = (g) => template
   .replace('/*__GRAPH_QUERY__*/', () => graphQuery.replace(/<\/script/gi, '<\\/script'))
   .replace('<!--__ELK_SCRIPT__-->', () => elkTag)
   .replace('/*__FONTS__*/', () => fontCss)
   .replace('/*__FLOORPLAN_DATA__*/null', () => JSON.stringify(g).replace(/<\/(script)/gi, '<\\/$1').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029'))
-  .replace(/__FLOORPLAN_TITLE__/g, () => escapeHtml(`${arch.project.name} map`))
+  .replace(/__FLOORPLAN_TITLE__/g, () => escapeHtml(`Carte · ${arch.project.name}`))
   .replace(/__FLOORPLAN_LOGO__/g, () => dataUri('logo.png'))
   .replace(/__FLOORPLAN_FAVICON__/g, () => dataUri('favicon.png'))
   .replace('<!--__UI_EXTENSIONS__-->', () => uiScripts);

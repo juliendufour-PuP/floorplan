@@ -15,13 +15,13 @@ test('a hard-coded password is found, with its line, and masked', () => {
   assert.equal(s.line, 2);
   assert.equal(s.name, 'DB_PASSWORD');
   assert.equal(s.sev, 'high');
-  assert.equal(s.hint, `${FAKE_PASSWORD.length} characters`, 'a password hint gives only its length');
+  assert.equal(s.hint, `${FAKE_PASSWORD.length} caractères`, 'a password hint gives only its length');
 });
 
 test('a known key format is named after its service and shows only its first characters', () => {
   const [s] = secrets(`token = "${FAKE_GITHUB_TOKEN}"`);
   assert.equal(s.svc, 'GitHub');
-  assert.match(s.hint, /^starts “ghp_…”, \d+ characters$/);
+  assert.match(s.hint, /^commence par « ghp_… », \d+ caractères$/);
 });
 
 test('the secret value never appears in what Health records', () => {

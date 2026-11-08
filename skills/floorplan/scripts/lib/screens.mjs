@@ -291,10 +291,8 @@ const UTILITY = /(^|\/)(utils?|helpers?|constants?|types?|typings|styles?|theme|
 const TESTY = /(^|\/)(tests?|__tests__|spec|e2e|cypress|playwright|__mocks__|fixtures|stories)(\/|$)|\.(test|spec|stories)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(py|go)$/i;
 const DATA_PATH = /(^|\/)(models?|schemas?|entities|entity|db|database|repositor(y|ies)|dao|tables?|prisma|orm)(\/|\.[a-z]+$|_)/i;
 const DB_LABEL = /postgres|mysql|maria|sqlite|mongo|redis|\bdatabase\b(?!s)|\bdb\b|supabase|firebase|firestore|dynamo|prisma|planetscale|cockroach|\bsql\b/i;
-const GET_VERBS = /^(list|get|fetch|load|search|find|look|lookup|check|export|download|preview|calculate|compute|count|show|view|read|poll|ping|generate|validate|verify|resolve|suggest|autocomplete)s?$/;
 const DB_PKG =/sqlalchemy|psycopg|\bpg\b|postgres|mysql|mongo|prisma|redis|sqlite|knex|typeorm|sequelize|drizzle|supabase|firebase|dynamo|gorm|diesel|activerecord/i;
 const AUTHY = /(^|\/)(auth|middlewares?|decorators?|permissions?|security|extensions)(\/|\.[a-z]+$|_)/i;
-const VERBS = new Set('place book reserve claim view read write post put rename renew rotate revoke grant request notify email share attach detach link unlink accept reject decline finalize lock unlock release hold quote estimate count tag untag filter sort report track subscribe unsubscribe join leave follow rate review comment reply flag block activate deactivate suspend resume pause poll ping backfill seed migrate map match swap replace convert recalculate rerun reprocess regenerate recount reorder restock return exchange weigh label fulfill dispatch deliver build deploy upsert insert fill clear flush purge expire invalidate trigger handle ack list get fetch load create add update edit save delete remove search find look check send start stop run mark apply approve cancel set reset preview calculate compute generate refresh submit record adjust issue redeem void close open print scan sync import export upload download move transfer assign archive restore publish unpublish toggle enable disable confirm complete process verify validate log sign register login logout invite connect disconnect wake retry resend bulk merge split duplicate clone schedule queue push pull test rebuild reprice receive pick pack ship refund charge pay collect capture authorize'.split(' '));
 
 export function buildScreens({ graph, scan, root }) {
   const files = new Map(graph.files.map((f) => [f.p, f]));
@@ -446,29 +444,30 @@ export function buildScreens({ graph, scan, root }) {
   const lc = (s) => s.charAt(0).toLowerCase() + s.slice(1);
   const routeNote = (r) => {
     const name = String(r.name || '').trim();
-    if (!name) return 'Asks the server for something';
+    if (!name) return 'Demande quelque chose au serveur';
     const first = name.split(/\s+/)[0].toLowerCase();
     const keepCase = /^[A-Z0-9]{2,}/.test(name.split(/\s+/)[0]);
     const body = keepCase ? name : lc(name);
-    // "Place order" → "Asks the server to place order"; "Product list" → "… for the product list"
-    const verb = r.m === 'GET' ? GET_VERBS.test(first) : VERBS.has(first) || VERBS.has(first.replace(/e?s$/, '')) || (!/s$/.test(first) && name.split(/\s+/).length > 1);
-    return verb ? `Asks the server to ${body}` : `Asks the server for ${/^(the|a|an)\b/i.test(body) ? body : 'the ' + body}`;
+    // "Créer une commande" → "Demande au serveur de créer une commande"; "Liste des produits" → "Demande au serveur : liste des produits"
+    // (names are French: a first word that reads as an infinitive takes "de", elided before a vowel)
+    const verb = !keepCase && /^\p{L}{2,}(er|ir|re)$/u.test(first);
+    return verb ? `Demande au serveur ${/^[aeiouyhàâéèêîôû]/i.test(body) ? 'd’' : 'de '}${body}` : `Demande au serveur : ${body}`;
   };
   const humanUrl = (url) => {
     const segs = url.split('/').filter(Boolean);
-    if (!segs.length) return 'Home';
+    if (!segs.length) return 'Accueil';
     const last = [...segs].reverse().find((s) => !s.startsWith(':') && s !== '*') || 'Page';
     const word = last.replace(/[-_]+/g, ' ');
-    return word.charAt(0).toUpperCase() + word.slice(1) + (segs[segs.length - 1].startsWith(':') ? ' (one item)' : '');
+    return word.charAt(0).toUpperCase() + word.slice(1) + (segs[segs.length - 1].startsWith(':') ? ' (un élément)' : '');
   };
   const frontNote = (p, depth, parentName) => {
     const b = P.basename(p);
-    if (/^use[A-Z]/.test(b) || /(^|\/)hooks?\//.test(p)) return 'Logic this screen uses';
-    if (/(^|\/)(contexts?|stores?|state|atoms)\//i.test(p) || /(Context|Provider|Store|[-_.]store|slice|atoms?)\.[jt]sx?$/.test(b)) return 'Shared state this screen uses';
+    if (/^use[A-Z]/.test(b) || /(^|\/)hooks?\//.test(p)) return 'Logique utilisée par cet écran';
+    if (/(^|\/)(contexts?|stores?|state|atoms)\//i.test(p) || /(Context|Provider|Store|[-_.]store|slice|atoms?)\.[jt]sx?$/.test(b)) return 'État partagé utilisé par cet écran';
     if (/^[a-z]/.test(b) && /\.(ts|js|mjs)$/.test(b)) {
-      return (out.get('f:' + p) || []).some((l) => l.k === 'http') || /api|client|service|quer(y|ies)|requests?/i.test(b) ? 'Talks to the server for this screen' : 'Helper code this screen uses';
+      return (out.get('f:' + p) || []).some((l) => l.k === 'http') || /api|client|service|quer(y|ies)|requests?/i.test(b) ? 'Échange avec le serveur pour cet écran' : 'Code utilitaire utilisé par cet écran';
     }
-    return depth <= 1 ? 'A component on this screen' : `Part of ${parentName}`;
+    return depth <= 1 ? 'Un composant de cet écran' : `Fait partie de ${parentName}`;
   };
 
   // ---------- behind: walk from the screen's file ----------
@@ -599,22 +598,22 @@ export function buildScreens({ graph, scan, root }) {
     for (const k of ['comp', 'server', 'ext', 'data']) { const extra = Math.max(0, Math.min(spare, Math.min(most[k], avail[k]) - caps[k])); caps[k] += extra; spare -= extra; }
 
     const name = (p) => files.get(p)?.name || stemName(p);
-    const items = [{ id: 'f:' + page, note: 'The screen itself', kind: 'screen' }];
+    const items = [{ id: 'f:' + page, note: 'L’écran lui-même', kind: 'screen' }];
     for (const c of comps.slice(0, caps.comp)) items.push({ id: 'f:' + c.p, note: frontNote(c.p, c.v.depth, name(c.v.parent || page)), kind: 'part' });
     for (const ri of shownReqs) items.push({ id: 'r:' + ri, note: routeNote(routes[ri]), kind: 'request' });
     for (const [p, s] of servers.slice(0, caps.server)) {
       const rn = s.routes.map((ri) => routes[ri]?.name).filter(Boolean);
-      const first = rn[0] ? `“${rn[0]}”` : 'these requests';
-      const more = rn.length > 1 ? ` and ${rn.length - 1} more` : '';
-      items.push({ id: 'f:' + p, note: s.role === 'handler' ? `Server code that handles ${first}${more}` : `Does the work behind ${first}${more}`, kind: 'server' });
+      const first = rn[0] ? `« ${rn[0]} »` : 'ces requêtes';
+      const more = rn.length > 2 ? ` et ${rn.length - 1} autres` : rn.length > 1 ? ' et 1 autre' : '';
+      items.push({ id: 'f:' + p, note: s.role === 'handler' ? `Code serveur qui traite ${first}${more}` : `Fait le travail derrière ${first}${more}`, kind: 'server' });
     }
     for (const [p, names] of datas.slice(0, caps.data)) {
       const ns = [...names].filter((n) => /^[A-Z][a-z]/.test(n)).sort((a, b) => a.length - b.length).slice(0, 2).map((n) => n.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase());
-      items.push({ id: 'f:' + p, note: ns.length ? `Keeps the ${ns.join(' and ')} records` : 'Saved data this reads or changes', kind: 'data' });
+      items.push({ id: 'f:' + p, note: ns.length ? `Conserve les données ${ns.join(' et ')}` : 'Données enregistrées que cet écran lit ou modifie', kind: 'data' });
     }
     for (const [id, e] of exts.slice(0, caps.ext)) {
       const n = nodes.get(id);
-      items.push({ id: 'n:' + id, note: isDb(n) ? 'Where the data is kept' : `Outside service, used by ${name(e.via)}`, kind: 'outside' });
+      items.push({ id: 'n:' + id, note: isDb(n) ? 'Là où les données sont conservées' : `Service extérieur, utilisé par ${name(e.via)}`, kind: 'outside' });
     }
     return items;
   }
@@ -632,7 +631,7 @@ export function buildScreens({ graph, scan, root }) {
   }
   const list = [...screens.values()].sort((a, b) => a.app.localeCompare(b.app) || a.url.localeCompare(b.url));
   for (const s of list) {
-    try { s.behind = behind(s.file, s.app, s.url); } catch (e) { s.behind = [{ id: 'f:' + s.file, note: 'The screen itself', kind: 'screen' }]; }
+    try { s.behind = behind(s.file, s.app, s.url); } catch (e) { s.behind = [{ id: 'f:' + s.file, note: 'L’écran lui-même', kind: 'screen' }]; }
   }
   return list;
 }

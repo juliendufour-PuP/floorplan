@@ -50,7 +50,7 @@ test('fallback names read like plain words', () => {
   assert.equal(humanize('order_service'), 'Order service');
   assert.equal(humanize('OrderService'), 'Order service');
   assert.equal(fallbackFileName('api/routes/order_service.py'), 'Order service');
-  assert.equal(fallbackRouteName({ method: 'POST', path: '/orders/:id/refund' }), 'Create orders refund');
+  assert.equal(fallbackRouteName({ method: 'POST', path: '/orders/:id/refund' }), 'Créer orders refund');
 });
 
 test('endpoint paths: parameters in every framework style match anything', () => {
